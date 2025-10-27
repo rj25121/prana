@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Pranic Map - Stable Vertical Layout</title>
+    <title>Interactive Pranic Map - Final Layout Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
         /* BASE STYLES: Use full viewport height and disable body scroll on desktop */
@@ -31,877 +31,562 @@
             height: 95vh; 
             background-color: #ffffff;
             border-radius: 16px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
-            padding: 30px;
-            overflow: hidden; 
-        }
-
-        @media (min-width: 1024px) { /* Desktop/Large screen layout: CSS Grid */
-            .map-wrapper {
-                display: grid;
-                grid-template-columns: 380px 1fr;
-                gap: 20px;
-            }
-        }
-        @media (max-width: 1023px) { /* Mobile/Tablet layout: Stacked */
-            body { height: auto; overflow-y: auto; padding: 0; }
-            .map-wrapper {
-                display: flex;
-                flex-direction: column; 
-                height: auto; 
-                min-height: 100vh;
-                overflow-y: visible; 
-                padding: 20px 10px;
-                border-radius: 0;
-            }
-        }
-
-        /* ---------------------------------------------------- */
-        /* LEFT COLUMN: MAP & GLOBAL CONTROLS */
-        /* ---------------------------------------------------- */
-        .map-column {
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             display: flex;
             flex-direction: column;
-            align-items: center;
-            /* CRITICAL: Takes 100% of the grid row height */
-            height: 100%; 
-            border-right: 1px solid #e5e7eb;
-            padding-right: 20px;
-            overflow-y: auto; /* Allow internal scroll on map column if map is too tall */
-        }
-        @media (max-width: 1023px) {
-            .map-column { border-right: none; padding-right: 0; overflow-y: visible; }
+            overflow: hidden; /* Hide internal overflow for clean edges */
         }
 
-        /* Prana Map Container */
-        .prana-map {
+        /* --- Map Canvas Container --- */
+        .map-container {
             position: relative;
-            width: 100%;
-            max-width: 380px; 
-            /* CRITICAL FIX: Constrain map height dynamically so it doesn't push below the viewport */
-            max-height: 60vh; 
-            aspect-ratio: 380 / 800; 
-            margin: 0 auto;
-            /* Using a simplified, slightly transparent SVG path for the body outline */
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 850"><path d="M200 50 C230 50 250 80 250 110 C250 140 230 170 200 170 C170 170 150 140 150 110 C150 80 170 50 200 50 Z M190 170 L190 200 M210 170 L210 200 M180 200 C160 250 160 350 180 450 L180 550 C180 600 220 600 220 550 L220 450 C240 350 240 250 220 200 Z M180 550 L180 750 M220 550 L220 750 M195 750 L205 750" fill="none" stroke="%239ca3af" stroke-width="2.5" stroke-linecap="round"/></svg>');
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center top;
+            flex-grow: 1;
+            background-color: #ffffff;
+            overflow: hidden;
         }
 
-        /* Positioning and Animation (Relative positions remain the same) */
-        .nadi-line { 
-            position: absolute; 
-            z-index: 10; 
-            pointer-events: all; 
-            cursor: pointer; 
-            /* CRITICAL FIX: Make the container span the body map height */
-            height: 100%; 
-            width: 40px; /* Give it some width for the angled lines to fit in */
-        } 
-        
-        /* Nadi Visibility: Set inactive color to BLACK for max contrast */
-        .nadi-line .static-path { 
-            position: absolute; 
-            opacity: 1.0; 
-            background-color: #000000; /* PURE BLACK for maximum visibility */
-            box-shadow: 0 0 3px rgba(0, 0, 0, 0.4); 
-            transition: opacity 0.3s, background-color 0.3s, box-shadow 0.3s, border-color 0.3s;
-            border: 2px solid transparent; 
-        }
-        
-        /* Sushumna positioning */
-        #sushumna-line { 
-            left: 50%; 
-            transform: translateX(-50%); 
-        }
-        #sushumna-line .static-path { 
-            width: 7px; 
-            height: calc(650 / 850 * 100%); 
-            left: 50%; top: calc(100 / 850 * 100%); 
-            transform: translateX(-50%); 
-            border-radius: 5px; 
-        }
-        
-        /* Ida positioning: Weaving to the left */
-        #ida-line { 
-            left: calc(180 / 400 * 100% - 40px); /* Position container to the left */
-        }
-        #ida-line .static-path { 
-            width: 7px; 
-            height: calc(600 / 850 * 100%); 
-            left: 100%; /* Position line at the right edge of its container */
-            top: calc(100 / 850 * 100%); 
-            transform: rotate(-8deg); 
-            /* Rotate around the bottom-right corner of the line */
-            transform-origin: 100% 100%; 
-            border-radius: 5px; 
-        }
-        
-        /* Pingala positioning: Weaving to the right */
-        #pingala-line { 
-            left: calc(220 / 400 * 100%); /* Position container to the right */
-        }
-        #pingala-line .static-path { 
-            width: 7px; 
-            height: calc(600 / 850 * 100%); 
-            left: 0; /* Position line at the left edge of its container */
-            top: calc(100 / 850 * 100%); 
-            transform: rotate(8deg); 
-            /* Rotate around the bottom-left corner of the line */
-            transform-origin: 0% 100%; 
-            border-radius: 5px; 
-        }
-        
-        @keyframes chakra-vortex { 0% { transform: translateX(-50%) scale(1); opacity: 0.9; } 50% { transform: translateX(-50%) scale(1.3); opacity: 0.5; } 100% { transform: translateX(-50%) scale(1); opacity: 0.9; } }
-        .chakra-dot { position: absolute; width: 35px; height: 35px; border-radius: 50%; left: 50%; transform: translateX(-50%); cursor: pointer; z-index: 15; border: 3px solid white; opacity: 0.9; transition: transform 0.3s; }
-        
-        /* SAHASRARA BINDU FIX */
-        .sahasrara-bindus {
+        /* --- Shared Element Styles --- */
+        .chakra, .nadi-line, .vayu-region {
             position: absolute;
-            top: -25px; /* Position above the main chakra dot */
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 3px;
-            opacity: 0.9;
-            z-index: 10;
-        }
-        .sahasrara-bindus .bindu {
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            background-color: white;
-            box-shadow: 0 0 5px rgba(255, 255, 255, 0.8), 0 0 5px #a855f7;
-            transition: all 0.3s;
-        }
-        .chakra-dot:hover .sahasrara-bindus .bindu, 
-        .chakra-dot.active-flow .sahasrara-bindus .bindu, 
-        .prana-map.all-active .chakra-dot .sahasrara-bindus .bindu {
-            background-color: var(--chakra-color);
-            box-shadow: 0 0 10px 2px var(--chakra-color);
-        }
-        /* END SAHASRARA BINDU FIX */
-        
-        #chakra-sahasrara { top: calc(80 / 850 * 100%); }
-        #chakra-ajna { top: calc(180 / 850 * 100%); }
-        #chakra-vishuddha { top: calc(280 / 850 * 100%); }
-        #chakra-anahata { top: calc(400 / 850 * 100%); }
-        #chakra-manipura { top: calc(520 / 850 * 100%); }
-        #chakra-svadhisthana { top: calc(620 / 850 * 100%); }
-        #chakra-muladhara { top: calc(720 / 850 * 100%); }
-        
-        .chakra-dot:hover, .chakra-dot.active-flow, .prana-map.all-active .chakra-dot {
-            animation: chakra-vortex 1.2s infinite ease-in-out;
-            box-shadow: 0 0 18px 6px var(--chakra-color);
-        }
-
-        @keyframes vayu-flow-anim-pervasive { 0% { box-shadow: 0 0 0 0 rgba(var(--vayu-rgb), 0.5); } 100% { box-shadow: 0 0 0 40px rgba(var(--vayu-rgb), 0); } }
-        .vayu-region { position: absolute; opacity: 0; transition: opacity 0.3s; z-index: 3; pointer-events: all; overflow: hidden; border: 1px dashed rgba(var(--vayu-rgb), 0.5); border-radius: 50%; }
-        /* Vyana covers the entire body */
-        #vyana-vayu-region { z-index: 2; border-radius: 50% / 10% 10% 50% 50%; top: calc(50 / 850 * 100%); left: calc(50 / 400 * 100%); width: calc(300 / 400 * 100%); height: calc(750 / 850 * 100%); } 
-        /* Prana Vayu (Upper chest/throat area) */
-        #vayu-prana { top: calc(250 / 850 * 100%); left: calc(80 / 400 * 100%); width: calc(240 / 400 * 100%); height: calc(250 / 850 * 100%); border-radius: 20%; }
-        /* Apana Vayu (Lower abdomen/pelvis) */
-        #vayu-apana { top: calc(500 / 850 * 100%); left: calc(80 / 400 * 100%); width: calc(240 / 400 * 100%); height: calc(250 / 850 * 100%); border-radius: 20%; }
-        /* Samana Vayu (Central belt/navel area) */
-        #vayu-samana { top: calc(400 / 850 * 100%); left: calc(50 / 400 * 100%); width: calc(300 / 400 * 100%); height: calc(100 / 850 * 100%); border-radius: 30px; }
-        /* Udana Vayu (Head/neck) */
-        #vayu-udana { top: calc(50 / 850 * 100%); left: calc(100 / 400 * 100%); width: calc(200 / 400 * 100%); height: calc(150 / 850 * 100%); border-radius: 50%; }
-
-        /* ACTIVATION STYLING */
-        .nadi-line:hover .static-path, .nadi-line.active-flow .static-path, .prana-map.all-active .nadi-line .static-path {
-            opacity: 0.95; 
-            background-color: var(--nadi-color); 
-            /* Enhanced shadow for visibility */
-            box-shadow: 0 0 22px 10px var(--nadi-color); 
-            /* Ensure the light color has a visible border against the white background */
-            border-color: rgba(0,0,0,0.4); 
-        }
-        .vayu-region:hover, .vayu-region.active-flow, .prana-map.all-active .vayu-region {
-            opacity: 0.5; background-color: rgba(var(--vayu-rgb), 0.2);
-        }
-        .vayu-region:hover #vyana-flow-pulse, .vayu-region.active-flow #vyana-flow-pulse, .prana-map.all-active #vyana-vayu-region #vyana-flow-pulse {
-            animation: vayu-flow-anim-pervasive 2s infinite ease-out;
-        }
-
-        /* ---------------------------------------------------- */
-        /* RIGHT COLUMN: GUIDE & EXPLANATION (FLEX TO FIT) */
-        /* ---------------------------------------------------- */
-        .guide-column {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            /* CRITICAL: Takes full available vertical space */
-            height: 100%; 
-            padding-left: 10px;
-        }
-
-        /* Guide Steps Container - Fixed internal scroll height */
-        .flow-guide-container {
-            flex-shrink: 0; 
-            height: 250px; 
-            overflow-y: auto; 
-            background-color: #fcfcfc;
-            border-radius: 8px;
-            padding: 10px;
-            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.03);
-            border: 1px solid #eee;
-        }
-        @media (max-width: 1023px) {
-            .flow-guide-container { height: 300px; }
-        }
-
-        /* Dynamic Explanation Panel - Takes ALL REMAINING VERTICAL SPACE */
-        .flow-explanation {
-            flex-grow: 1; 
-            background-color: #fffbeb;
-            border: 1px solid #fde68a;
-            border-left: 5px solid #d97706; 
-            border-radius: 8px;
-            padding: 20px;
-            overflow-y: auto; /* CRITICAL: Internal scroll for the explanation text if it gets very long */
-        }
-
-        /* Adding styles for the new section headers in the explanation */
-        .flow-explanation h4 {
-            font-weight: 700;
-            color: #d97706; /* Amber color */
-            margin-top: 15px;
-            margin-bottom: 5px;
-            padding-bottom: 3px;
-            border-bottom: 1px dashed #fcd34d;
-        }
-        .flow-explanation p {
-            margin-bottom: 10px;
-        }
-        
-        /* Flow Steps - Very compact */
-        .flow-step-item {
-            padding: 10px 14px;
-            border-bottom: 1px solid #f3f4f6;
-            transition: background-color 0.2s, border-left 0.2s;
+            transition: all 0.5s ease-in-out, box-shadow 0.3s ease-in-out;
+            border-radius: 9999px; /* Rounded corners for all elements */
             cursor: pointer;
         }
-        .flow-step-item.current {
-            background-color: #e0f2fe; 
-            border-left: 4px solid #0ea5e9;
-            font-weight: 600;
-        }
-        .flow-step-item:hover {
-            background-color: #f1f5f9;
-        }
-        .flow-step-item:last-child { border-bottom: none; }
 
-
-        /* Info Box */
-        .info-box {
-            position: fixed; background-color: rgba(30, 41, 59, 0.95); color: white;
-            padding: 15px; border-radius: 10px; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.7);
-            max-width: 350px; font-size: 0.9rem; line-height: 1.4; opacity: 0;
-            visibility: hidden; transition: opacity 0.2s, visibility 0.2s; z-index: 1000; 
-            /* IMPORTANT: We MUST keep pointer-events: none when hidden */
-            pointer-events: none; border-left: 5px solid #3b82f6; 
+        /* --- CHAKRAS (Dots) --- */
+        .chakra {
+            width: 20px;
+            height: 20px;
+            z-index: 10;
+            background-color: #d1d5db; /* Inactive Chakra color */
+            transform: translate(-50%, -50%); /* Center based on position */
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
         }
-        .info-box.active { opacity: 1; visibility: visible; }
-        .info-box h4 { font-weight: bold; font-size: 1.2rem; margin-bottom: 5px; color: #60a5fa; } 
-        .info-box strong { color: #facc15; }
+        
+        /* CHAKRA ACTIVE STATE (Glow) */
+        .chakra.active-flow {
+            /* The base color changes dynamically via JS */
+            box-shadow: 0 0 10px 5px var(--chakra-color), 0 0 20px 10px var(--chakra-color);
+            transform: translate(-50%, -50%) scale(1.5);
+            animation: pulse 1.5s infinite alternate;
+        }
+
+        /* --- NADIS (Lines) --- */
+        .nadi-line {
+            width: 10px;
+            /* CRITICAL FIX: Inactive Nadis are now pure black for maximum visibility */
+            background-color: #000000; 
+            z-index: 5;
+            top: 5%; /* Start below Sahasrara */
+            height: 90%; /* Span most of the body length */
+            transform: translateX(-50%); /* Center on the 'left' property */
+        }
+
+        /* Specific Nadi positioning */
+        #sushumna-nadi { left: 50%; }
+        #ida-nadi { left: calc(50% - 20px); }
+        #pingala-nadi { left: calc(50% + 20px); }
+
+        /* NADI ACTIVE STATE (Glow & Color) */
+        .nadi-line.active-flow {
+            background-color: var(--nadi-color); /* Color changes dynamically via JS */
+            box-shadow: 0 0 10px 2px var(--nadi-color);
+            /* Added subtle border for contrast against white background */
+            border: 1px solid rgba(0, 0, 0, 0.3); 
+        }
+
+        /* --- VAYU REGIONS (Transparent zones) --- */
+        .vayu-region {
+            z-index: 1;
+            opacity: 0.1; /* Very subtle appearance */
+            border: 1px dashed transparent;
+        }
+
+        /* VAYU ACTIVE STATE (Colored border) */
+        .vayu-region.active-flow {
+            border: 2px dashed var(--vayu-color);
+            background-color: var(--vayu-color);
+            opacity: 0.2;
+        }
+
+        /* --- Info Box --- */
+        #info-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            z-index: 50;
+        }
+        
+        /* --- Crown Dots (Bindu) --- */
+        .bindu-dot {
+            width: 5px;
+            height: 5px;
+            background-color: #ffffff;
+            border: 1px solid #1f2937;
+            position: absolute;
+            top: -10px; /* Position relative to Sahasrara */
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        /* Responsive adjustments for mobile/smaller screens */
+        @media (max-width: 1024px) {
+            body {
+                height: auto;
+                overflow-y: auto;
+                padding: 5px;
+            }
+            .map-wrapper {
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+                margin: 10px 0;
+            }
+            .map-container {
+                height: 50vh; /* Give map decent size on top */
+            }
+            /* Adjust positioning of lines for smaller screens if necessary, though percentages help */
+        }
     </style>
 </head>
 <body>
 
-    <div class="map-wrapper">
-        
-        <!-- ============================================== -->
-        <!-- LEFT COLUMN: MAP & GLOBAL CONTROLS (380px fixed width) -->
-        <!-- ============================================== -->
-        <div class="map-column">
-            <header class="w-full text-center mb-6 flex flex-col items-center">
-                <h1 class="text-3xl font-extrabold text-gray-800">Prana Flow Ascension Map</h1>
-                <p class="text-gray-500 mt-1 mb-4">Nadis, Vayus, and Chakras in harmony.</p>
-                <div class="flex flex-row gap-3 justify-center w-full max-w-sm mx-auto">
-                    <button id="toggle-all-flow" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg shadow-md transition duration-200">
-                        Activate All Flow
-                    </button>
-                    <button id="reset-flow-button" class="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg shadow-md transition duration-200" style="display: none;">
-                        Reset Flow
-                    </button>
-                </div>
-            </header>
+    <div class="map-wrapper shadow-xl">
+        <header class="p-4 bg-gray-50 border-b border-gray-200">
+            <h1 class="text-2xl font-bold text-center text-indigo-700">Interactive Pranic Flow Map (Nadis, Chakras, Vayus)</h1>
+        </header>
 
-            <div class="prana-map" id="prana-map">
-                
-                <!-- VAYUS (Winds of Prana) -->
-                <div class="vayu-region" id="vyana-vayu-region" style="--vayu-rgb: 74, 222, 128;" 
-                    data-name="Vyana Vayu" data-flow="Pervasive and Circulating" 
-                    data-description="The distributing force that governs all circulation, movement, and fills the entire body's periphery. It is the underlying, pervasive energy."
-                    data-bio-link="Biology: Governs peripheral circulation, voluntary movement, and the nervous system's responsiveness. <strong>Emotion: Cohesion, space, and freedom of movement.</strong>">
-                    <div id="vyana-flow-pulse"></div>
-                </div>
-                <div class="vayu-region" id="vayu-prana" style="--vayu-rgb: 96, 165, 250;" 
-                    data-name="Prana Vayu" data-flow="Inward and Upward" 
-                    data-description="Governs the intake of breath, food, and sensory input. Located in the chest and head, focused on inhalation."
-                    data-bio-link="Biology: Controls inhalation and motor function of the heart. <strong>Emotion: Inspiration, enthusiasm, and a positive outlook.</strong>">
-                </div>
-                <div class="vayu-region" id="vayu-apana" style="--vayu-rgb: 239, 68, 68;" 
-                    data-name="Apana Vayu" data-flow="Downward and Outward" 
-                    data-description="Governs all forms of elimination, excretion, and grounding. Located from the navel down, focused on exhalation and release."
-                    data-bio-link="Biology: Controls bowel, bladder, and reproductive elimination. <strong>Emotion: Release, grounding, and letting go of burdens.</strong>">
-                </div>
-                <div class="vayu-region" id="vayu-samana" style="--vayu-rgb: 251, 191, 36;" 
-                    data-name="Samana Vayu" data-flow="Centering (Periphery to Navel)" 
-                    data-description="The equalizing force, responsible for digestion, assimilation, and processing in the abdomen. It balances Prana and Apana."
-                    data-bio-link="Biology: Controls digestion, absorption, and heat regulation (Agni). <strong>Emotion: Balance, integration, and focused attention.</strong>">
-                </div>
-                <div class="vayu-region" id="vayu-udana" style="--vayu-rgb: 167, 139, 250;" 
-                    data-name="Udana Vayu" data-flow="Ascending" 
-                    data-description="Governs speech, self-expression, and the energy needed for ascension of consciousness. Located in the throat and head, focused on upward movement."
-                    data-bio-link="Biology: Controls the larynx, facial muscles, and effort of standing. <strong>Emotion: Willpower, aspiration, and expression of ideas.</strong>">
-                </div>
-
-
-                <!-- NADIS (Energy Channels) -->
-                <div class="nadi-line" id="sushumna-line" style="--nadi-color: #facc15;" 
-                    data-name="Sushumna Nadi (Central)" 
-                    data-description="The main channel for awakened consciousness (Kundalini), running along the central axis of the spine. Neutral and purely spiritual energy."
-                    data-bio-link="Biology: Corresponds to the Central Nervous System (spinal cord). <strong>Emotion: Equanimity, transcendence, and psychological balance.</strong>">
-                    <div class="static-path"></div>
-                </div>
-
-                <div class="nadi-line" id="ida-line" style="--nadi-color: #60a5fa;" 
-                    data-name="Ida Nadi (Lunar)" 
-                    data-description="The cooling, feminine, and introverted channel. It governs passive energy, intuition, and mental rest. Flows on the left side, ending in the left nostril."
-                    data-bio-link="Biology: Dominates the Parasympathetic Nervous System (rest, digest). <strong>Emotion: Calmness, introversion, and emotional receptivity.</strong>">
-                    <div class="static-path"></div>
-                </div>
-
-                <div class="nadi-line" id="pingala-line" style="--nadi-color: #ea580c;" 
-                    data-name="Pingala Nadi (Solar)" 
-                    data-description="The heating, masculine, and extroverted channel. It governs active energy, metabolism, and vitality. Flows on the right side, ending in the right nostril."
-                    data-bio-link="Biology: Dominates the Sympathetic Nervous System (fight, flight). <strong>Emotion: Focus, drive, ambition, and outward projection.</strong>">
-                    <div class="static-path"></div>
-                </div>
-
-                <!-- CHAKRAS (Energy Centers) -->
-                <div class="chakra-dot" id="chakra-sahasrara" style="background-color: #a855f7; --chakra-color: #a855f7;"
-                    data-name="Sahasrara (Crown)" data-location="Top of the head" 
-                    data-description="Pure Consciousness and Spiritual Connection. The culmination of ascent."
-                    data-bio-link="Biology: Linked to the Pineal Gland. <strong>Emotion: Transcendence, blissful detachment, and oneness.</strong>">
-                    <!-- ADDING THREE BINDUS/LINES ABOVE SAHASRARA TO ADDRESS USER FEEDBACK -->
-                    <div class="sahasrara-bindus">
-                        <span class="bindu"></span>
-                        <span class="bindu"></span>
-                        <span class="bindu"></span>
-                    </div>
-                </div>
-                <div class="chakra-dot" id="chakra-ajna" style="background-color: #4338ca; --chakra-color: #4338ca;"
-                    data-name="Ajna (Third Eye)" data-location="Between the eyebrows" 
-                    data-description="The center of intuition, inner wisdom, and mental clarity. The meeting point of the three main Nadis."
-                    data-bio-link="Biology: Linked to the Pituitary Gland. <strong>Emotion: Insight, clear thought, visualization.</strong>"></div>
-                <div class="chakra-dot" id="chakra-vishuddha" style="background-color: #0ea5e9; --chakra-color: #0ea5e9;"
-                    data-name="Vishuddha (Throat)" data-location="Throat region" 
-                    data-description="Communication, Expression, and the vibration of truth."
-                    data-bio-link="Biology: Linked to the Thyroid Gland. <strong>Emotion: Self-expression, authenticity.</strong>"></div>
-                <div class="chakra-dot" id="chakra-anahata" style="background-color: #22c55e; --chakra-color: #22c55e;"
-                    data-name="Anahata (Heart)" data-location="Center of the chest" 
-                    data-description="The center of Love, Compassion, and connection (the bridge between lower and upper chakras)."
-                    data-bio-link="Biology: Linked to the Heart, Lungs, and Thymus gland. <strong>Emotion: Joy, empathy, and unconditional love.</strong>"></div>
-                <div class="chakra-dot" id="chakra-manipura" style="background-color: #eab308; --chakra-color: #eab308;"
-                    data-name="Manipura (Solar Plexus)" data-location="Navel/Upper abdomen" 
-                    data-description="Center of Personal Power, Will, and digestive fire."
-                    data-bio-link="Biology: Linked to the Pancreas, Adrenals, and digestive system. <strong>Emotion: Self-esteem, courage, and confidence.</strong>"></div>
-                <div class="chakra-dot" id="chakra-svadhisthana" style="background-color: #f97316; --chakra-color: #f97316;"
-                    data-name="Svadhisthana (Sacral)" data-location="Lower abdomen/Sacrum" 
-                    data-description="Center of Creativity, Pleasure, and emotional flow."
-                    data-bio-link="Biology: Linked to the Reproductive organs and fluid regulation. <strong>Emotion: Creativity, desire, pleasure.</strong>"></div>
-                <div class="chakra-dot" id="chakra-muladhara" style="background-color: #dc2626; --chakra-color: #dc2626;"
-                    data-name="Muladhara (Root)" data-location="Base of the spine/Perineum" 
-                    data-description="The foundation for Stability, Survival, and Grounding. Where Kundalini energy rests."
-                    data-bio-link="Biology: Linked to the Adrenal glands, large intestine, and skeletal structure. <strong>Emotion: Security, fear, and survival instincts.</strong>"></div>
-            </div>
-        </div>
-
-        <!-- ============================================== -->
-        <!-- RIGHT COLUMN: GUIDE & EXPLANATION (Takes remaining 1fr width) -->
-        <!-- ============================================== -->
-        <div class="guide-column">
-            <h2 class="text-2xl font-bold text-gray-800 border-b pb-2">Ascension Flow Guide</h2>
-            <button id="next-step-button" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-200 w-full mb-1">
-                Start Flow (Step 1: Grounding)
-            </button>
-
-            <!-- Guide Steps Container - Fixed internal scroll height -->
-            <div class="flow-guide-container">
-                <div id="flow-steps">
-                    <div id="step-1" class="flow-step-item" data-step="1">
-                        <h5>Step 1: Grounding & Stability (Muladhara)</h5>
-                        <p><strong>Focus:</strong> Apana Vayu (Downward Flow).</p>
-                    </div>
-                    <div id="step-2" class="flow-step-item" data-step="2">
-                        <h5>Step 2: Flow & Creativity (Svadhisthana)</h5>
-                        <p><strong>Focus:</strong> Apana Vayu maintained for pelvic stability and flow.</p>
-                    </div>
-                    <div id="step-3" class="flow-step-item" data-step="3">
-                        <h5>Step 3: Power & Will (Manipura)</h5>
-                        <p><strong>Focus:</strong> Samana Vayu (Centering) & purification.</p>
-                    </div>
-                    <div id="step-4" class="flow-step-item" data-step="4">
-                        <h5>Step 4: Compassion & Connection (Anahata)</h5>
-                        <p><strong>Focus:</strong> Nadi Equilibrium & integration.</p>
-                    </div>
-                    <div id="step-5" class="flow-step-item" data-step="5">
-                        <h5>Step 5: Expression & Clarity (Vishuddha)</h5>
-                        <p><strong>Focus:</strong> Udana Vayu (Ascending) for speech and willpower.</p>
-                    </div>
-                    <div id="step-6" class="flow-step-item" data-step="6">
-                        <h5>Step 6: Intuition & Insight (Ajna)</h5>
-                        <p><strong>Focus:</strong> Harmonizing Ida, Pingala, and Sushumna Nadis.</p>
-                    </div>
-                    <div id="step-7" class="flow-step-item" data-step="7">
-                        <h5>Step 7: Transcendence (Sahasrara)</h5>
-                        <p><strong>Focus:</strong> Pure Sushumna Nadi conduit.</p>
-                    </div>
-                    <div id="step-8" class="flow-step-item" data-step="8">
-                        <h5>Step 8: Samadhi (Integration)</h5>
-                        <p><strong>Focus:</strong> Total, harmonious activation of all energy systems.</p>
-                    </div>
-                </div>
-            </div>
+        <div class="flex flex-col lg:flex-row flex-grow overflow-hidden">
             
-            <!-- Dynamic Explanation Panel - Takes ALL REMAINING SPACE -->
-            <div id="flow-explanation" class="flow-explanation">
-                <h3 id="explanation-title" class="text-xl font-bold text-gray-800 mb-2 border-b border-amber-300 pb-1">Energetic Focus</h3>
-                <p id="explanation-text" class="text-gray-700">Click "Start Flow" to begin the ascension journey. The <strong>Vyana Vayu</strong> (Distributor) and <strong>Sushumna Nadi</strong> (Central Channel) are the constant, underlying support for all higher practices.</p>
+            <!-- Left Panel: The Map Container -->
+            <div class="map-container flex-1 border-r border-gray-200 p-4">
+                <div class="relative w-full h-full">
+
+                    <!-- Body Outline Placeholder (Visual aid for positioning) -->
+                    <div class="absolute inset-0 flex justify-center items-center pointer-events-none">
+                        <div class="w-2/5 h-full max-h-full border-x border-gray-300 rounded-t-full relative">
+                            <!-- Simple body shape proxy -->
+                        </div>
+                    </div>
+
+                    <!-- --- Vayu Regions (Behind Nadis) --- -->
+                    <div id="vayu-vyana" data-info="vayu-vyana" class="vayu-region bg-pink-300 w-full h-full"></div>
+                    <div id="vayu-samana" data-info="vayu-samana" class="vayu-region bg-green-300 w-1/2 h-1/3 top-1/3 left-1/4"></div>
+                    <div id="vayu-udana" data-info="vayu-udana" class="vayu-region bg-purple-300 w-1/4 h-1/4 top-0 left-3/8"></div>
+                    <div id="vayu-prana" data-info="vayu-prana" class="vayu-region bg-blue-300 w-1/4 h-1/4 top-1/4 left-3/8"></div>
+                    <div id="vayu-apana" data-info="vayu-apana" class="vayu-region bg-red-300 w-1/4 h-1/4 bottom-0 left-3/8"></div>
+
+                    <!-- --- Nadis (Lines) --- -->
+                    <div id="sushumna-nadi" data-info="nadi-sushumna" class="nadi-line"></div>
+                    <div id="ida-nadi" data-info="nadi-ida" class="nadi-line"></div>
+                    <div id="pingala-nadi" data-info="nadi-pingala" class="nadi-line"></div>
+                    
+                    <!-- --- Chakras (Dots) and Bindu --- -->
+                    <div id="chakra-sahasrara" data-info="chakra-sahasrara" class="chakra top-[5%] left-[50%]" style="background-color: #a78bfa;">
+                        <!-- Bindu Dots -->
+                        <div class="bindu-dot left-[50%]"></div>
+                        <div class="bindu-dot left-[calc(50%-10px)]"></div>
+                        <div class="bindu-dot left-[calc(50%+10px)]"></div>
+                    </div>
+                    <div id="chakra-ajna" data-info="chakra-ajna" class="chakra top-[10%] left-[50%]" style="background-color: #3b82f6;"></div>
+                    <div id="chakra-vishuddha" data-info="chakra-vishuddha" class="chakra top-[25%] left-[50%]" style="background-color: #06b6d4;"></div>
+                    <div id="chakra-anahata" data-info="chakra-anahata" class="chakra top-[45%] left-[50%]" style="background-color: #10b981;"></div>
+                    <div id="chakra-manipura" data-info="chakra-manipura" class="chakra top-[60%] left-[50%]" style="background-color: #f59e0b;"></div>
+                    <div id="chakra-svadhisthana" data-info="chakra-svadhisthana" class="chakra top-[75%] left-[50%]" style="background-color: #f97316;"></div>
+                    <div id="chakra-muladhara" data-info="chakra-muladhara" class="chakra top-[90%] left-[50%]" style="background-color: #ef4444;"></div>
+                    
+                    <!-- Info Box (Hidden by default) -->
+                    <div id="info-box" class="bg-gray-900 text-white p-4 rounded-lg shadow-2xl max-w-sm">
+                        <h3 id="info-title" class="text-lg font-bold mb-2"></h3>
+                        <p id="info-content" class="text-sm"></p>
+                    </div>
+
+                </div>
             </div>
+
+            <!-- Right Panel: Flow Guide and Explanation -->
+            <div class="flow-guide-container w-full lg:w-96 flex flex-col p-6 bg-white border-l border-gray-200 h-full">
+                
+                <h2 class="text-xl font-semibold text-indigo-700 mb-4 border-b pb-2">Prana Ascension Flow Guide</h2>
+
+                <!-- Control Buttons -->
+                <div class="flex space-x-2 mb-4">
+                    <button id="next-step-button" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-150">Start Flow</button>
+                    <button id="reset-button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg shadow-md transition duration-150" style="display: none;">Reset</button>
+                </div>
+
+                <!-- Flow Steps List (Scrollable) -->
+                <div id="flow-steps-list" class="space-y-2 mb-4 overflow-y-auto max-h-40 lg:max-h-56 p-2 rounded-lg bg-gray-50 border">
+                    <!-- Steps will be generated here -->
+                </div>
+
+                <!-- Explanation Box (Fixed Height, Scrollable Content) -->
+                <div class="flex-grow flex flex-col mt-4 border-t pt-4 min-h-0">
+                    <h3 id="explanation-title" class="text-lg font-bold mb-2 text-indigo-800">Welcome</h3>
+                    <div id="flow-explanation-box" class="flex-grow text-gray-700 text-sm leading-relaxed overflow-y-auto pr-2">
+                        <p>Click **"Start Flow"** to begin the meditation and learn how to activate the central energy channel and ascend through the seven Chakras and five Vayus.</p>
+                        <p class="mt-2">Hover over any **Nadi** (line), **Chakra** (dot), or **Vayu** (area) on the map for anatomical and energetic details.</p>
+                    </div>
+                </div>
+
+                <!-- Activation Toggle Button -->
+                <button id="activate-all-button" class="mt-4 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-150">Activate All (Simulate Samadhi)</button>
+            </div>
+
         </div>
     </div>
     
-    <div id="info-box" class="info-box">
-        <h4></h4>
-        <p class="description"></p>
-        <p class="details"></p>
-        <p class="bio-link"></p>
-    </div>
-
     <script>
-        // Ensure the entire script runs after the DOM is loaded
-        document.addEventListener('DOMContentLoaded', (event) => {
-            
-            const pranaMap = document.getElementById('prana-map');
+        document.addEventListener('DOMContentLoaded', () => {
+            const mapContainer = document.querySelector('.map-container');
             const nextStepButton = document.getElementById('next-step-button');
-            const resetButton = document.getElementById('reset-flow-button');
-            const explanationTextEl = document.getElementById('explanation-text');
+            const resetButton = document.getElementById('reset-button');
+            const activateAllButton = document.getElementById('activate-all-button');
+            const flowStepsList = document.getElementById('flow-steps-list');
             const explanationTitleEl = document.getElementById('explanation-title');
-            const toggleAllButton = document.getElementById('toggle-all-flow');
+            const explanationTextEl = document.getElementById('flow-explanation-box');
             
-            // --- Setup ---
-            const chakraOrder = [
-                'chakra-muladhara', 'chakra-svadhisthana', 'chakra-manipura', 'chakra-anahata', 
-                'chakra-vishuddha', 'chakra-ajna', 'chakra-sahasrara'
-            ];
-            // Note: chakraElements are defined implicitly by their IDs in the map below.
-            const allElements = document.querySelectorAll('.chakra-dot, .nadi-line, .vayu-region');
-            
-            const NADI_SUSHUMNA = document.getElementById('sushumna-line');
-            const NADI_IDA = document.getElementById('ida-line');
-            const NADI_PINGALA = document.getElementById('pingala-line');
-            
-            const VAYU_VYANA = document.getElementById('vyana-vayu-region');
-            const VAYU_PRANA = document.getElementById('vayu-prana');
-            const VAYU_APANA = document.getElementById('vayu-apana');
-            const VAYU_SAMANA = document.getElementById('vayu-samana');
-            const VAYU_UDANA = document.getElementById('vayu-udana');
-            
-            // Check if all essential elements exist
-            if (!pranaMap || !nextStepButton || !resetButton || !explanationTextEl || !explanationTitleEl || !toggleAllButton || !NADI_SUSHUMNA || !NADI_IDA || !NADI_PINGALA || !VAYU_VYANA || !VAYU_PRANA || !VAYU_APANA || !VAYU_SAMANA || !VAYU_UDANA) {
-                console.error("Initialization Error: Not all required map elements were found in the DOM.");
-                return; // Stop script execution if essential elements are missing
-            }
+            let currentFlowStep = 0; // 0 = initial, 1-7 = chakra steps, 8 = complete/samadhi
+            let isAllActive = false;
 
-            let currentFlowStep = 0; 
-
-            // --- Dynamic Explanations (Updated Content) ---
+            // --- Configuration Data ---
+            const chakraColors = {
+                'muladhara': '#ef4444', 'svadhisthana': '#f97316', 'manipura': '#f59e0b', 
+                'anahata': '#10b981', 'vishuddha': '#06b6d4', 'ajna': '#3b82f6', 
+                'sahasrara': '#a78bfa'
+            };
+            const nadiColors = { 'sushumna': '#facc15', 'ida': '#3b82f6', 'pingala': '#f59e0b' };
+            const vayuColors = { 
+                'prana': '#3b82f6', 'samana': '#10b981', 'apana': '#ef4444', 
+                'udana': '#a78bfa', 'vyana': '#f59e0b' 
+            };
+            
+            // Full Flow: 1-7 are Chakra activations, 8 is Samadhi
             const flowExplanations = {
-                1: {
-                    title: "Step 1: Grounding & Stability (Muladhara)",
-                    text: `
-                        <p>The process starts with <strong>Apana Vayu</strong> (Downward Flow) rooting energy, while Prana Vayu (Intake) begins the subtle pull upwards. The <strong>Sushumna Nadi</strong> is the focus channel, bypassing Ida and Pingala at the base.</p>
-                        <h4>Subtle-Physical Link</h4>
-                        <p>Corresponds to the <strong>sacrum, large intestine, and adrenal glands</strong>. This center governs the body's fundamental connection to gravity, elimination, and survival instincts.</p>
-                        <h4>Activation Practice (What to Do)</h4>
-                        <p><strong>Mantra/Visualization:</strong> Sit with a straight spine. Focus on the exhale, directing <strong>Apana Vayu</strong> (energy) from the navel down to the perineum. Visualize a grounding red light at the base. Use the seed mantra <strong>LAM</strong> on the exhale.</p>
-                    `,
-                    nadis: [NADI_SUSHUMNA],
-                    chakras: ['chakra-muladhara'],
-                    vayus: [VAYU_VYANA, VAYU_APANA, VAYU_PRANA]
+                0: { title: "Welcome to the Prana Flow Map", text: "Click **'Start Flow'** to begin the step-by-step ascension meditation practice." },
+                1: { title: "Step 1: Grounding - Muladhara Chakra",
+                     text: `<strong>Subtle-Physical Link:</strong> Located at the base of the spine (coccyx and perineum), linked to the **Pelvic Floor** and **Adrenal Glands** (stress response). Governs the nervous system's 'fight or flight' response.<br><br>
+                            <strong>Activation Practice:</strong> Focus attention at the perineum. Practice **Mula Bandha** (root lock) on the exhale. Visualize a solid **red square**. Chant the **LAM** mantra. This activates **Apana Vayu** (downward moving energy) for elimination and grounding.`
                 },
-                2: {
-                    title: "Step 2: Flow & Creativity (Svadhisthana)",
-                    text: `
-                        <p>The grounding achieved in Muladhara is maintained, but the energy gains fluidity. <strong>Apana Vayu</strong> remains the key energetic force, governing creative flow and ensuring stability. The focus remains on the central <strong>Sushumna Nadi</strong> for pure, contained flow.</p>
-                        <h4>Subtle-Physical Link</h4>
-                        <p>Connected to the <strong>reproductive organs, bladder, and kidneys</strong>, governing the body's internal fluids, lymphatic circulation, and emotional movement.</p>
-                        <h4>Activation Practice (What to Do)</h4>
-                        <p><strong>Movement/Breath:</strong> Practice subtle <strong>circular hip movements</strong> while seated or standing. Use a gentle, oceanic breath. Visualize a liquid, swirling orange energy that flows freely, welcoming creativity and pleasure. Seed mantra <strong>VAM</strong>.</p>
-                    `,
-                    nadis: [NADI_SUSHUMNA],
-                    chakras: ['chakra-svadhisthana'],
-                    vayus: [VAYU_VYANA, VAYU_APANA]
+                2: { title: "Step 2: Creativity - Svadhisthana Chakra",
+                     text: `<strong>Subtle-Physical Link:</strong> Located in the lower abdomen, linked to the **Reproductive Organs** and **Kidneys**. Governs the lymphatic system and the flow of bodily fluids.<br><br>
+                            <strong>Activation Practice:</strong> Focus at the sacrum and lower back. Visualize a swirling **orange crescent moon**. Practice **Ashwini Mudra** (contraction of anal sphincter). Chant the **VAM** mantra. This flow stabilizes personal emotion and sexual energy.`
                 },
-                3: {
-                    title: "Step 3: Power & Will (Manipura)",
-                    text: `
-                        <p>Energy shifts from rooting to purification. <strong>Samana Vayu</strong> (Centering) powerfully draws energy from the periphery into the navel, igniting the digestive fire (Agni). This purifies the collected lower energy for ascent through <strong>Sushumna</strong>.</p>
-                        <h4>Subtle-Physical Link</h4>
-                        <p>Associated with the <strong>pancreas, liver, and solar plexus nerve cluster</strong>, responsible for metabolic power (Agni), assimilation of food, and personal vitality.</p>
-                        <h4>Activation Practice (What to Do)</h4>
-                        <p><strong>Breath/Bandha:</strong> Perform rhythmic <strong>Kapalabhati (Skull Shining Breath)</strong> to generate core heat. Engage <strong>Uddiyana Bandha</strong> (abdominal lock) on the exhale to powerfully centralize energy. Visualize a brilliant yellow sun at the navel. Seed mantra <strong>RAM</strong>.</p>
-                    `,
-                    nadis: [NADI_SUSHUMNA],
-                    chakras: ['chakra-manipura'],
-                    vayus: [VAYU_VYANA, VAYU_SAMANA]
+                3: { title: "Step 3: Power - Manipura Chakra",
+                     text: `<strong>Subtle-Physical Link:</strong> Located at the solar plexus, linked to the **Pancreas** and **Digestive Fire**. Governs metabolism and the assimilation of energy and nutrients.<br><br>
+                            <strong>Activation Practice:</strong> Focus deeply behind the navel center. Practice **Uddiyana Bandha** (abdominal lock). Visualize a brilliant **yellow triangle**. Chant the **RAM** mantra. This activates **Samana Vayu** (balancing, radiating energy) for digestion and core confidence.`
                 },
-                4: {
-                    title: "Step 4: Compassion & Connection (Anahata)",
-                    text: `
-                        <p>This is the major shift from the lower, physical centers to the higher, emotional ones. We strive for perfect energetic equilibrium, with the <strong>Sushumna Nadi</strong> acting as the sole, neutral conduit, integrating the purified work of the lower centers.</p>
-                        <h4>Subtle-Physical Link</h4>
-                        <p>Directly linked to the <strong>heart, lungs, and thymus gland</strong>, governing circulation, immunity, and the rhythmic expansion/contraction of life.</p>
-                        <h4>Activation Practice (What to Do)</h4>
-                        <p><strong>Intention/Mudra:</strong> Place hands in <strong>Anjali Mudra (Prayer Position)</strong> at the chest. Focus on balancing <strong>Prana Vayu</strong> (intake) and <strong>Apana Vayu</strong> (release) in the heart space. Cultivate a feeling of <strong>universal, unconditional love</strong> and openness. Visualize a radiant green light. Seed mantra <strong>YAM</strong>.</p>
-                    `,
-                    nadis: [NADI_SUSHUMNA],
-                    chakras: ['chakra-anahata'],
-                    vayus: [VAYU_VYANA, VAYU_PRANA] // Prana Vayu is associated with intake, located in the chest
+                4: { title: "Step 4: Compassion - Anahata Chakra",
+                     text: `<strong>Subtle-Physical Link:</strong> Located in the center of the chest, linked to the **Heart** and **Thymus Gland** (immune system). Governs the circulatory and respiratory systems.<br><br>
+                            <strong>Activation Practice:</strong> Focus in the center of the sternum. Practice **Raja Mudra** (hands cupped over the heart). Visualize a vibrant **green six-pointed star**. Chant the **YAM** mantra. This activates **Prana Vayu** (forward moving, receiving energy) for life force and unconditional love.`
                 },
-                5: {
-                    title: "Step 5: Expression & Clarity (Vishuddha)",
-                    text: `
-                        <p>The <strong>Udana Vayu</strong> (Ascending) takes prominence, specifically controlling the larynx and the upward flow of consciousness. The energy is purified in the lower centers, moving toward finding its voice and expression through the <strong>Sushumna Nadi</strong> conduit.</p>
-                        <h4>Subtle-Physical Link</h4>
-                        <p>Governed by the <strong>thyroid gland</strong>, controlling metabolism, and the vocal cords, hearing, and the subtle energy of sound (Shabda).</p>
-                        <h4>Activation Practice (What to Do)</h4>
-                        <p><strong>Japa/Chanting:</strong> Focus on the upward movement of <strong>Udana Vayu</strong> through the throat. Practice slow, deep chanting of the seed mantra <strong>HAM</strong> to cleanse the expression center, promoting truthfulness and clarity of intention. Visualize light blue energy.</p>
-                    `,
-                    nadis: [NADI_SUSHUMNA],
-                    chakras: ['chakra-vishuddha'],
-                    vayus: [VAYU_VYANA, VAYU_UDANA]
+                5: { title: "Step 5: Expression - Vishuddha Chakra",
+                     text: `<strong>Subtle-Physical Link:</strong> Located at the throat, linked to the **Thyroid Gland**. Governs metabolism and growth. Associated with communication, truth, and purifying toxins.<br><br>
+                            <strong>Activation Practice:</strong> Focus at the throat pit. Practice **Jalandhara Bandha** (throat lock). Visualize a radiant **sky-blue circle**. Chant the **HAM** mantra. This energy supports self-expression and listening.`
                 },
-                6: {
-                    title: "Step 6: Intuition & Insight (Ajna)",
-                    text: `
-                        <p>Clarity at the Third Eye requires the conscious merging of duality. All three primary Nadis (<strong>Ida</strong> (Lunar), <strong>Pingala</strong> (Solar), and <strong>Sushumna</strong>) are activated, representing the final harmonization of opposing forces to achieve unified insight.</p>
-                        <h4>Subtle-Physical Link</h4>
-                        <p>Associated with the <strong>pituitary gland</strong> (the master gland) and the prefrontal cortex, governing perception, wisdom, and intuition.</p>
-                        <h4>Activation Practice (What to Do)</h4>
-                        <p><strong>Dharana (Concentration):</strong> Practice <strong>Nadi Shodhana (Alternate Nostril Breathing)</strong> to balance Ida and Pingala, drawing the energy into <strong>Sushumna</strong>. Close your eyes and direct your inner gaze to the space between the eyebrows. Visualize a clear indigo light. Seed mantra <strong>OM</strong>.</p>
-                    `,
-                    nadis: [NADI_SUSHUMNA, NADI_IDA, NADI_PINGALA],
-                    chakras: ['chakra-ajna'],
-                    vayus: [VAYU_VYANA, VAYU_UDANA]
+                6: { title: "Step 6: Intuition - Ajna Chakra",
+                     text: `<strong>Subtle-Physical Link:</strong> Located between the eyebrows, linked to the **Pituitary Gland** (the "master gland"). Governs hormonal balance and sensory perception.<br><br>
+                            <strong>Activation Practice:</strong> Focus intently on the space between the eyebrows (the third eye). Visualize a deep **indigo-blue lotus**. Chant the **OM** mantra. This is the seat of higher thought and intuitive insight.`
                 },
-                7: {
-                    title: "Step 7: Transcendence (Sahasrara)",
-                    text: `
-                        <p>At the crown, awareness moves beyond the dualities of the physical and mental world. All specific, localized Vayus are dissolved into the pervasive <strong>Vyana Vayu</strong>. Only the central <strong>Sushumna Nadi</strong> remains as the pure conduit of unified consciousness (Samadhi is imminent).</p>
-                        <h4>Subtle-Physical Link</h4>
-                        <p>Linked to the <strong>pineal gland</strong> and the cortex, representing the gateway for cosmic awareness, spiritual transcendence, and ultimate bliss.</p>
-                        <h4>Activation Practice (What to Do)</h4>
-                        <p><strong>Meditation/Stillness:</strong> Let go of all specific focus, visualization, or breath control. Simply observe the flow of pure energy ascending through <strong>Sushumna Nadi</strong>. Meditate on the void or on infinite white/violet light above the crown. There is no seed mantra here; this is the realm of silence.</p>
-                    `,
-                    nadis: [NADI_SUSHUMNA],
-                    chakras: ['chakra-sahasrara'],
-                    vayus: [VAYU_VYANA]
+                7: { title: "Step 7: Consciousness - Sahasrara Chakra",
+                     text: `<strong>Subtle-Physical Link:</strong> Located at the crown of the head, linked to the **Pineal Gland**. Governs spiritual awareness, cognitive function, and connection to Universal energy.<br><br>
+                            <strong>Activation Practice:</strong> Focus at the crown, just above the physical head. Visualize a thousand-petaled **violet and white lotus**. Meditate on the **Silence** (the un-struck sound). This activates **Udana Vayu** (upward moving energy) guiding consciousness toward transcendence.`
                 },
-                8: {
-                    title: "Step 8: Samadhi - Total Integration",
-                    text: `
-                        <p>This is the ultimate state of balance and unified consciousness. All Nadis and all Vayus are activated simultaneously, working in perfect, harmonious synchronization throughout the entire subtle body system.</p>
-                        <h4>Subtle-Physical Link</h4>
-                        <p>A state of total coherence across all major glands and nervous systems (Central, Sympathetic, Parasympathetic), resulting in total energetic equilibrium and profound well-being.</p>
-                        <h4>Activation Practice (What to Do)</h4>
-                        <p><strong>Dhyana (Absorption):</strong> Hold the state achieved in Step 7. Allow the entire body to radiate and vibrate with balanced energy. This state cannot be 'done' but is the effortless result (the fruit) of prolonged, dedicated, and perfected practice of the preceding seven steps.</p>
-                    `,
-                    nadis: [NADI_SUSHUMNA, NADI_IDA, NADI_PINGALA],
-                    chakras: chakraOrder, // All chakras
-                    vayus: [VAYU_VYANA, VAYU_APANA, VAYU_PRANA, VAYU_SAMANA, VAYU_UDANA]
+                8: { title: "Samadhi - Complete Flow & Transcendence",
+                     text: `<strong>All Nadis, Chakras, and Vayus are fully integrated.</strong><br><br>The energy has ascended the **Sushumna Nadi** and unified all centers. The ultimate state of Samadhi (absorption) represents the complete balance of Ida (lunar) and Pingala (solar) currents, allowing the vital force to flow unobstructed. Continue to sit in silent **meditation** with a balanced breath and full absorption in the light.`
                 }
             };
             
-            // Helper function to get element data for display
-            function getElementData(element) {
-                let name = element.dataset.name;
-                let description = element.dataset.description;
-                let bioLink = element.dataset.bioLink || '';
-                let type = '';
+            // --- Utility Functions ---
 
-                if (element.classList.contains('chakra-dot')) { 
-                    type = 'Chakra'; 
-                    name += ` (${element.dataset.location})`;
-                } 
-                else if (element.classList.contains('vayu-region')) { 
-                    type = 'Vayu'; 
-                    description = `<strong>Flow Direction:</strong> ${element.dataset.flow}. ${description}`;
-                }
-                else if (element.classList.contains('nadi-line')) { 
-                    type = 'Nadi'; 
-                }
-                
-                return { name, description, bioLink, type };
-            }
+            // Show details for a hovered element
+            function showInfoBox(element) {
+                const type = element.getAttribute('data-info').split('-')[0];
+                const key = element.getAttribute('data-info').split('-')[1];
+                let title = '';
+                let content = '';
 
-            // --- Info Box Logic ---
-            const infoBox = document.getElementById('info-box');
-            
-            function updateInfoBox(data, x, y) {
-                if (!infoBox) return; // Safety check
-                infoBox.querySelector('h4').textContent = data.name;
-                infoBox.querySelector('.description').innerHTML = data.description;
-                infoBox.querySelector('.bio-link').innerHTML = data.bioLink;
-                
-                // Positioning logic to keep the box visible
-                const boxWidth = 350; // Max width from CSS
-                let boxHeight = infoBox.offsetHeight;
-                if (boxHeight < 50) boxHeight = 150; // Estimate height before full render
-                const padding = 15;
-                
-                let newX = x + padding; // default offset to the right
-                let newY = y - padding; // default offset slightly up
+                // Simplified hover data for Nadis, Chakras, Vayus
+                const infoData = {
+                    'nadi-sushumna': { title: 'Sushumna Nadi (Central)', content: 'The central channel of Prana, running along the spine. Activation leads to spiritual ascent.' },
+                    'nadi-ida': { title: 'Ida Nadi (Lunar)', content: 'The channel running to the left, associated with cooling, feminine (Yin), mental energy, and the Parasympathetic Nervous System.' },
+                    'nadi-pingala': { title: 'Pingala Nadi (Solar)', content: 'The channel running to the right, associated with heating, masculine (Yang), vital energy, and the Sympathetic Nervous System.' },
+                    'chakra-muladhara': { title: 'Muladhara (Root)', content: 'Grounding, security, survival. Element: Earth.' },
+                    'chakra-svadhisthana': { title: 'Svadhisthana (Sacral)', content: 'Creativity, fluidity, emotion. Element: Water.' },
+                    'chakra-manipura': { title: 'Manipura (Solar Plexus)', content: 'Willpower, power, metabolism. Element: Fire.' },
+                    'chakra-anahata': { title: 'Anahata (Heart)', content: 'Love, compassion, balance. Element: Air.' },
+                    'chakra-vishuddha': { title: 'Vishuddha (Throat)', content: 'Communication, expression, purification. Element: Ether.' },
+                    'chakra-ajna': { title: 'Ajna (Third Eye)', content: 'Intuition, wisdom, spiritual sight. Governs Pituitary Gland.' },
+                    'chakra-sahasrara': { title: 'Sahasrara (Crown)', content: 'Transcendence, cosmic consciousness. Governs Pineal Gland.' },
+                    'vayu-prana': { title: 'Prana Vayu', content: 'Inward and forward moving energy. Governs respiration and reception. Located in the heart/head region.' },
+                    'vayu-samana': { title: 'Samana Vayu', content: 'Balancing and equalizing energy. Governs digestion and assimilation. Located in the core/navel region.' },
+                    'vayu-apana': { title: 'Apana Vayu', content: 'Downward and outward moving energy. Governs elimination and grounding. Located in the pelvic region.' },
+                    'vayu-udana': { title: 'Udana Vayu', content: 'Upward moving energy. Governs speech, exhalation, and ascent to the crown. Located in the throat/head region.' },
+                    'vayu-vyana': { title: 'Vyana Vayu', content: 'Pervasive, circulating energy. Governs the distribution of Prana throughout the entire body.' }
+                };
 
-                // Check right boundary
-                if (newX + boxWidth > window.innerWidth - padding) {
-                    // If it overflows the right edge, move it to the left of the cursor
-                    newX = x - boxWidth - padding;
+                const data = infoData[element.getAttribute('data-info')];
+                if (data) {
+                    const infoBox = document.getElementById('info-box');
+                    document.getElementById('info-title').textContent = data.title;
+                    document.getElementById('info-content').textContent = data.content;
+                    
+                    // Position the info box near the element
+                    const rect = element.getBoundingClientRect();
+                    const mapRect = mapContainer.getBoundingClientRect();
+                    
+                    infoBox.style.left = `${rect.left + rect.width / 2 - mapRect.left}px`;
+                    infoBox.style.top = `${rect.top + rect.height / 2 - mapRect.top}px`;
+                    infoBox.style.display = 'block';
                 }
-                
-                // Check top/bottom boundaries
-                if (newY + boxHeight > window.innerHeight - padding) {
-                    // If it overflows the bottom, push it up
-                    newY = window.innerHeight - boxHeight - padding;
-                }
-                if (newY < padding) {
-                    // If it overflows the top, push it down
-                    newY = padding;
-                }
-                
-                // Ensure it doesn't go off the left edge
-                if (newX < padding) {
-                    newX = padding;
-                }
-
-                infoBox.style.left = `${newX}px`;
-                infoBox.style.top = `${newY}px`;
-                infoBox.classList.add('active');
             }
 
             function hideInfoBox() {
-                if (!infoBox) return; // Safety check
-                infoBox.classList.remove('active');
-                infoBox.style.pointerEvents = 'none'; 
+                document.getElementById('info-box').style.display = 'none';
             }
 
-            // Attach event listeners for mouse interaction
-            allElements.forEach(element => {
-                element.addEventListener('mouseenter', (event) => {
-                    if (pranaMap.classList.contains('all-active')) return; 
+            // --- Flow Management Functions ---
+            const allElements = document.querySelectorAll('.chakra, .nadi-line, .vayu-region');
 
-                    const data = getElementData(element);
-                    updateInfoBox(data, event.clientX, event.clientY);
-                });
-
-                element.addEventListener('mousemove', (event) => {
-                    if (pranaMap.classList.contains('all-active')) return;
-                    // Update position on mouse movement
-                    if (infoBox.classList.contains('active')) {
-                        updateInfoBox(getElementData(element), event.clientX, event.clientY);
-                    }
-                });
-
-                element.addEventListener('mouseleave', () => {
-                    hideInfoBox();
-                });
-                
-                // Handle touch events (tap to activate info box)
-                element.addEventListener('click', (event) => {
-                    if (pranaMap.classList.contains('all-active')) return;
-                    
-                    event.stopPropagation(); // Prevent document click listener from firing
-
-                    const data = getElementData(element);
-                    const isSameElement = infoBox.dataset.activeElementId === element.id;
-                    
-                    if (infoBox.classList.contains('active') && isSameElement) {
-                        // If tapping the same element, toggle off
-                        hideInfoBox();
-                        infoBox.dataset.activeElementId = '';
-                    } else {
-                        // Otherwise, show info for this element
-                        updateInfoBox(data, event.clientX, event.clientY);
-                        infoBox.dataset.activeElementId = element.id;
-                        infoBox.style.pointerEvents = 'auto'; // Make info box clickable (if needed)
-                    }
-                });
-            });
-            
-            // Hide info box if clicking anywhere else on the document
-            document.addEventListener('click', (event) => {
-                const isMapElement = event.target.closest('.chakra-dot, .nadi-line, .vayu-region');
-                const isInfoBox = event.target.closest('#info-box');
-                
-                if (!isMapElement && !isInfoBox && infoBox.classList.contains('active')) {
-                    hideInfoBox();
-                    infoBox.dataset.activeElementId = '';
-                }
-            });
-
-
-            // --- Flow State Management ---
-            
             function clearFlowStates() {
-                allElements.forEach(el => el.classList.remove('active-flow'));
-                document.querySelectorAll('.flow-step-item').forEach(step => step.classList.remove('current'));
+                allElements.forEach(el => {
+                    el.classList.remove('active-flow');
+                    el.style.removeProperty('--chakra-color');
+                    el.style.removeProperty('--nadi-color');
+                    el.style.removeProperty('--vayu-color');
+                });
             }
 
-            function updateFlowMap(stepData) {
+            function updateStepDisplay(step) {
+                // Highlight the current step in the list
+                document.querySelectorAll('.flow-step-item').forEach(el => el.classList.remove('current'));
+                const stepEl = document.getElementById(`step-${step}`);
+                if (stepEl) {
+                    stepEl.classList.add('current');
+                    stepEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+                
+                // Update text explanation
+                const explanation = flowExplanations[step] || flowExplanations[0];
+                explanationTitleEl.textContent = explanation.title;
+                explanationTextEl.innerHTML = explanation.text;
+            }
+
+            function resetFlow(doScroll) {
+                currentFlowStep = 0;
+                isAllActive = false;
                 clearFlowStates();
+                updateStepDisplay(0);
+
+                // Show/hide controls
+                nextStepButton.textContent = "Start Flow";
+                nextStepButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+                nextStepButton.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                resetButton.style.display = 'none';
+                activateAllButton.style.display = 'block';
                 
-                // Activate elements for the current step
-                if (stepData.nadis) {
-                    stepData.nadis.forEach(nadi => {
-                        if (nadi) nadi.classList.add('active-flow');
-                    });
+                // Clear active chakras from flow
+                document.querySelectorAll('.flow-step-item').forEach((el, index) => {
+                    if (index > 0) el.classList.remove('active');
+                });
+
+                if (doScroll) {
+                    flowStepsList.scrollTop = 0; // Scroll to top on reset
                 }
-                if (stepData.vayus) {
-                    stepData.vayus.forEach(vayu => {
-                        if (vayu) vayu.classList.add('active-flow');
-                    });
-                }
-                if (stepData.chakras) {
-                    stepData.chakras.forEach(id => {
-                        const chakra = document.getElementById(id);
-                        if (chakra) chakra.classList.add('active-flow');
-                    });
-                }
-                
-                // Update explanation panel
-                explanationTitleEl.textContent = stepData.title;
-                explanationTextEl.innerHTML = stepData.text; // Use innerHTML for structured text
             }
             
-            function goToStep(step) {
-                // Handle edge cases
-                if (step > 8) {
-                    resetFlow(true); // Loop back to start, pass true to scroll
+            function advanceFlow() {
+                if (isAllActive) {
+                    resetFlow(true);
                     return;
                 }
-                if (step < 1) {
-                    step = 1; // Don't go below step 1
-                }
                 
-                currentFlowStep = step;
-                const stepData = flowExplanations[currentFlowStep];
-                if (!stepData) return; // Safety check
+                currentFlowStep++;
                 
-                // Update UI elements
-                const currentStepEl = document.getElementById(`step-${currentFlowStep}`);
-                document.querySelectorAll('.flow-step-item').forEach(el => el.classList.remove('current')); // Clear all first
-                if (currentStepEl) {
-                    currentStepEl.classList.add('current');
+                if (currentFlowStep > 7) {
+                    // Flow is complete (Samadhi State)
+                    currentFlowStep = 8; 
+                    updateFlowMap(currentFlowStep);
+                    activateAllButton.style.display = 'none';
+                    resetButton.style.display = 'block';
+                    nextStepButton.textContent = "Flow Complete! Reset to Start.";
+                    nextStepButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                    nextStepButton.classList.add('bg-green-600', 'hover:bg-green-700');
+                    
+                    // Manually update Step 8 appearance
+                    const step8El = document.getElementById('step-8');
+                    document.querySelectorAll('.flow-step-item').forEach(el => el.classList.remove('current'));
+                    if (step8El) {
+                        step8El.classList.add('current', 'active');
+                        step8El.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                    
+                    return;
                 }
+
+                // Normal step advancement
+                updateFlowMap(currentFlowStep);
+                updateStepDisplay(currentFlowStep);
+                
+                // Mark previous step as active/done
+                const prevStepEl = document.getElementById(`step-${currentFlowStep - 1}`);
+                if (prevStepEl) prevStepEl.classList.add('active');
                 
                 // Update button text
-                let nextStepTitle = "Flow Complete! Reset to Start.";
-                if (currentFlowStep < 8) {
-                    const nextStepData = flowExplanations[currentFlowStep + 1];
-                    if (nextStepData && nextStepData.title) {
-                        const simpleTitle = nextStepData.title.split(': ')[1]?.replace(/\s\(.*\)/, '') || 'Next';
-                        nextStepTitle = `Next Step (${currentFlowStep + 1}: ${simpleTitle})`;
-                    }
+                if (currentFlowStep === 7) {
+                    nextStepButton.textContent = "Achieve Samadhi (Final Step)";
+                } else {
+                    nextStepButton.textContent = `Next Step: Step ${currentFlowStep + 1}`;
                 }
-                nextStepButton.textContent = nextStepTitle;
-                
-                resetButton.style.display = 'block';
-                toggleAllButton.textContent = "Activate All Flow"; // Reset toggle button
-                toggleAllButton.classList.replace('bg-red-600', 'bg-indigo-600');
-                toggleAllButton.classList.replace('hover:bg-red-700', 'hover:bg-indigo-700');
-                pranaMap.classList.remove('all-active');
-
-                // Update the map visuals
-                updateFlowMap(stepData);
-                
-                // Scroll the guide to show the current step
-                if (currentStepEl) {
-                    currentStepEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-                
-                hideInfoBox();
             }
 
-            function resetFlow(scroll = false) { // Add scroll parameter
-                currentFlowStep = 0;
+            function updateFlowMap(step) {
                 clearFlowStates();
-                resetButton.style.display = 'none';
-                nextStepButton.textContent = "Start Flow (Step 1: Grounding)";
                 
-                explanationTitleEl.textContent = "Energetic Focus";
-                explanationTextEl.innerHTML = `Click "Start Flow" to begin the ascension journey. The <strong>Vyana Vayu</strong> (Distributor) and <strong>Sushumna Nadi</strong> (Central Channel) are the constant, underlying support for all higher practices.`;
-                
-                // Set default visual base state (Only Vyana is active on load to show the body field, Nadis remain dark)
-                if (VAYU_VYANA) VAYU_VYANA.classList.add('active-flow');
-                // NADI_SUSHUMNA is intentionally left inactive here so it appears black/dark until step 1
-                
-                toggleAllButton.textContent = "Activate All Flow";
-                toggleAllButton.classList.replace('bg-red-600', 'bg-indigo-600');
-                toggleAllButton.classList.replace('hover:bg-red-700', 'hover:bg-indigo-700');
-                pranaMap.classList.remove('all-active');
-                hideInfoBox();
-                
-                // Highlight the "start" state
-                document.querySelectorAll('.flow-step-item').forEach(el => el.classList.remove('current'));
-                const step1El = document.getElementById('step-1');
-                if (step1El) {
-                    step1El.classList.add('current');
-                    if (scroll) { // Only scroll if explicitly told to
-                        step1El.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                // Step 1: Muladhara, Apana Vayu, Sushumna Nadi
+                if (step >= 1) {
+                    // Nadi: Sushumna (Central Channel)
+                    const sushumna = document.getElementById('sushumna-nadi');
+                    sushumna.style.setProperty('--nadi-color', nadiColors.sushumna);
+                    sushumna.classList.add('active-flow');
+                    
+                    // Vayu: Vyana (Pervasive energy, always active during flow)
+                    const vyana = document.getElementById('vayu-vyana');
+                    vyana.style.setProperty('--vayu-color', vayuColors.vyana);
+                    vyana.classList.add('active-flow');
+
+                    // Vayu: Apana (Downward energy)
+                    const apana = document.getElementById('vayu-apana');
+                    apana.style.setProperty('--vayu-color', vayuColors.apana);
+                    apana.classList.add('active-flow');
+                }
+
+                // Step 2: Svadhisthana
+                if (step >= 2) {
+                    const svadhisthana = document.getElementById('chakra-svadhisthana');
+                    svadhisthana.style.setProperty('--chakra-color', chakraColors.svadhisthana);
+                    svadhisthana.classList.add('active-flow');
+                }
+
+                // Step 3: Manipura, Samana Vayu
+                if (step >= 3) {
+                    const manipura = document.getElementById('chakra-manipura');
+                    manipura.style.setProperty('--chakra-color', chakraColors.manipura);
+                    manipura.classList.add('active-flow');
+
+                    // Vayu: Samana (Navel)
+                    const samana = document.getElementById('vayu-samana');
+                    samana.style.setProperty('--vayu-color', vayuColors.samana);
+                    samana.classList.add('active-flow');
+                }
+
+                // Step 4: Anahata, Prana Vayu
+                if (step >= 4) {
+                    const anahata = document.getElementById('chakra-anahata');
+                    anahata.style.setProperty('--chakra-color', chakraColors.anahata);
+                    anahata.classList.add('active-flow');
+
+                    // Vayu: Prana (Heart/Chest)
+                    const prana = document.getElementById('vayu-prana');
+                    prana.style.setProperty('--vayu-color', vayuColors.prana);
+                    prana.classList.add('active-flow');
+                }
+
+                // Step 5: Vishuddha
+                if (step >= 5) {
+                    const vishuddha = document.getElementById('chakra-vishuddha');
+                    vishuddha.style.setProperty('--chakra-color', chakraColors.vishuddha);
+                    vishuddha.classList.add('active-flow');
+                }
+
+                // Step 6: Ajna, Ida & Pingala Nadis Balance
+                if (step >= 6) {
+                    const ajna = document.getElementById('chakra-ajna');
+                    ajna.style.setProperty('--chakra-color', chakraColors.ajna);
+                    ajna.classList.add('active-flow');
+                    
+                    // Nadi: Ida and Pingala (Balanced)
+                    const ida = document.getElementById('ida-nadi');
+                    ida.style.setProperty('--nadi-color', nadiColors.ida);
+                    ida.classList.add('active-flow');
+                    const pingala = document.getElementById('pingala-nadi');
+                    pingala.style.setProperty('--nadi-color', nadiColors.pingala);
+                    pingala.classList.add('active-flow');
+                }
+
+                // Step 7: Sahasrara, Udana Vayu
+                if (step >= 7) {
+                    const sahasrara = document.getElementById('chakra-sahasrara');
+                    sahasrara.style.setProperty('--chakra-color', chakraColors.sahasrara);
+                    sahasrara.classList.add('active-flow');
+
+                    // Vayu: Udana (Upward energy)
+                    const udana = document.getElementById('vayu-udana');
+                    udana.style.setProperty('--vayu-color', vayuColors.udana);
+                    udana.classList.add('active-flow');
+                }
+
+                // Loop through steps to activate chakras up to current step
+                for (let i = 1; i <= Math.min(step, 7); i++) {
+                    const chakraKey = Object.keys(chakraColors)[i - 1];
+                    const chakraEl = document.getElementById(`chakra-${chakraKey}`);
+                    if (chakraEl) {
+                        chakraEl.style.setProperty('--chakra-color', chakraColors[chakraKey]);
+                        chakraEl.classList.add('active-flow');
                     }
                 }
             }
-            
-            // --- Event Listeners ---
-            
-            nextStepButton.addEventListener('click', () => {
-                goToStep(currentFlowStep + 1);
-            });
 
-            resetButton.addEventListener('click', () => {
-                resetFlow(true); // Scroll on explicit reset
-            });
+            // --- Event Listeners and Initialization ---
 
-            
-            // Step selection from the guide
-            const flowStepsContainer = document.getElementById('flow-steps');
-            if (flowStepsContainer) {
-                flowStepsContainer.addEventListener('click', (event) => {
-                    const stepItem = event.target.closest('.flow-step-item');
-                    if (stepItem) {
-                        const step = parseInt(stepItem.dataset.step, 10);
-                        if (!isNaN(step)) {
-                            goToStep(step);
-                        }
+            // Generate Flow Steps in the list
+            for (let i = 1; i <= 7; i++) {
+                const stepTitle = flowExplanations[i].title.split(': ')[1]; // Extract just the Chakra name
+                const item = document.createElement('div');
+                item.id = `step-${i}`;
+                item.className = 'flow-step-item p-2 rounded-lg cursor-pointer transition duration-100 border border-gray-200 text-sm hover:bg-indigo-50 hover:border-indigo-400';
+                item.textContent = `Step ${i}: ${stepTitle}`;
+                item.setAttribute('data-step', i);
+                
+                item.addEventListener('click', () => {
+                    if (currentFlowStep >= i) { // Allow review of completed steps
+                        currentFlowStep = i - 1; // Set back one step so advanceFlow works
+                        advanceFlow();
                     }
                 });
+                flowStepsList.appendChild(item);
             }
             
-            // Toggle All Flow functionality
-            toggleAllButton.addEventListener('click', () => {
-                const isCurrentlyActive = pranaMap.classList.toggle('all-active');
-                
-                if (isCurrentlyActive) {
-                    toggleAllButton.textContent = "Deactivate All Flow";
-                    toggleAllButton.classList.replace('bg-indigo-600', 'bg-red-600');
-                    toggleAllButton.classList.replace('hover:bg-indigo-700', 'hover:bg-red-700');
-                    
-                    // Set logic to step 8 (Samadhi)
+            // Add Samadhi Step
+            const samadhiItem = document.createElement('div');
+            samadhiItem.id = `step-8`;
+            samadhiItem.className = 'flow-step-item p-2 rounded-lg cursor-pointer transition duration-100 border border-gray-200 text-sm hover:bg-orange-50 hover:border-orange-400 font-bold';
+            samadhiItem.textContent = flowExplanations[8].title;
+            samadhiItem.setAttribute('data-step', 8);
+            flowStepsList.appendChild(samadhiItem);
+
+
+            // General hover listeners for all elements
+            allElements.forEach(el => {
+                el.addEventListener('mouseenter', () => showInfoBox(el));
+                el.addEventListener('mouseleave', hideInfoBox);
+            });
+
+            // Button listeners
+            nextStepButton.addEventListener('click', advanceFlow);
+            resetButton.addEventListener('click', () => resetFlow(true));
+
+            activateAllButton.addEventListener('click', () => {
+                isAllActive = !isAllActive;
+                if (isAllActive) {
                     currentFlowStep = 8; 
                     clearFlowStates(); 
                     // Manually activate all elements for 'all-active' state
@@ -910,13 +595,31 @@
                     const step8El = document.getElementById('step-8');
                     document.querySelectorAll('.flow-step-item').forEach(el => el.classList.remove('current'));
                     if (step8El) {
-                        step8El.classList.add('current');
+                        step8El.classList.add('current', 'active');
                         step8El.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     }
                     
-                    resetButton.style.display = 'block'; 
-                    nextStepButton.textContent = "Flow Complete! Reset to Start."; 
+                    // Set all Nadi colors to be active, but specifically Sushumna to golden
+                    document.getElementById('sushumna-nadi').style.setProperty('--nadi-color', nadiColors.sushumna);
+                    document.getElementById('ida-nadi').style.setProperty('--nadi-color', nadiColors.ida);
+                    document.getElementById('pingala-nadi').style.setProperty('--nadi-color', nadiColors.pingala);
                     
+                    // Set all Chakra colors
+                    Object.keys(chakraColors).forEach(key => {
+                        const chakraEl = document.getElementById(`chakra-${key}`);
+                        if(chakraEl) chakraEl.style.setProperty('--chakra-color', chakraColors[key]);
+                    });
+
+                    // Set all Vayu colors
+                    Object.keys(vayuColors).forEach(key => {
+                        const vayuEl = document.getElementById(`vayu-${key}`);
+                        if(vayuEl) vayuEl.style.setProperty('--vayu-color', vayuColors[key]);
+                    });
+
+                    resetButton.style.display = 'block'; 
+                    activateAllButton.textContent = "Exit Samadhi (Reset)";
+                    nextStepButton.style.display = 'none';
+
                     // Update text explanation to reflect "All Active"
                     explanationTitleEl.textContent = flowExplanations[8].title;
                     explanationTextEl.innerHTML = flowExplanations[8].text;
@@ -925,6 +628,8 @@
                 } else {
                     // If turning off "All Active", go back to the reset state
                     resetFlow(true); // Scroll on reset from all
+                    activateAllButton.textContent = "Activate All (Simulate Samadhi)";
+                    nextStepButton.style.display = 'block';
                 }
             });
             
